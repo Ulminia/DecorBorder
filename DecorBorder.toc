@@ -1,0 +1,7 @@
+## Interface: 110000
+## Title: DecorBorder
+## Notes: Colors housing décor items red/green based on collection
+## Author: Ulminia-Zangarmarsh
+## Version: 1.1.3
+
+DecorBorder.lua
