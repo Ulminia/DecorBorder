@@ -1,5 +1,1 @@
 package-as: DecorBorder
-
-ignore:
-  - .git
-  - .github
