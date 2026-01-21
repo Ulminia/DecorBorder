@@ -5,10 +5,13 @@ on:
     tags:
       - 'v*'   # any tag that begins with "v"
 
+env:
+    CF_API_KEY: ${{ secrets.CURSEFORGE_API_TOKEN }}
+    
 jobs:
-  build-and-publish:
+  release:
     runs-on: ubuntu-latest
-
+    environment: Default
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -16,6 +19,8 @@ jobs:
     - name: CurseForge Packager
       uses: BigWigsMods/packager@v2
       with:
-        args: -c wow
-      env:
-        CF_API_KEY: ${{ secrets.CURSEFORGE_API_TOKEN }}
+        args: -g retail
+    -name: Package and release
+      uses: BigWigsMods/packager@v2
+      with:
+        args: -g retail
