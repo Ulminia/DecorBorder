@@ -1,6 +1,7 @@
 -- DecorBorder Addon
--- Version 1.1.4
--- Event-driven merchant-only execution (no background leaks)
+-- Version 1.1.5
+-- Tooltip-based ownership detection (authoritative Blizzard data)
+-- Runs only while merchant window is open (no background work / no leaks)
 
 DecorBorder = {}
 DecorBorderDB = DecorBorderDB or {}
@@ -10,16 +11,6 @@ local defaults = {
 	colorLearned = {0, 1, 0},   -- green
 	colorUnlearned = {1, 0, 0}, -- red
 }
-
-local function Print(text, ...)
-	if text then
-		if text:match("%%[dfqs%d%.]") then
-			print("DECB " .. format(text, ...))
-		else
-			print("DECB " .. strjoin(" ", text, tostringall(...)))
-		end
-	end
-end
 
 local function CopyDefaults(src, dst)
 	if type(dst) ~= "table" then dst = {} end
@@ -33,65 +24,93 @@ local function CopyDefaults(src, dst)
 	return dst
 end
 
+local function Print(text, ...)
+	if text then
+		if text:match("%%[dfqs%d%.]") then
+			print("DECB " .. format(text, ...))
+		else
+			print("DECB " .. strjoin(" ", text, tostringall(...)))
+		end
+	end
+end
+
 DecorBorderDB = CopyDefaults(defaults, DecorBorderDB)
 
--- ============================================================
--- Housing Catalog Init (request once per session)
--- ============================================================
-
-local CatalogRequested = false
 
 local function RequestCatalog()
 	local catalogSearcher = C_HousingCatalog.CreateCatalogSearcher();
 	catalogSearcher:GetCatalogSearchResults();
 end
 
+
 -- ============================================================
--- Decor Helpers
+-- Hidden Tooltip Scanner
+-- ============================================================
+
+local ScanTooltip = CreateFrame("GameTooltip", "DecorBorderScanTooltip", UIParent, "GameTooltipTemplate")
+ScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+
+local function StripColorCodes(text)
+	-- removes |cAARRGGBB and |r and |cn... codes
+	text = text:gsub("|c%x%x%x%x%x%x%x%x", "")
+	text = text:gsub("|cn.-:", "")
+	text = text:gsub("|r", "")
+	return text
+end
+
+-- Reads Blizzard's own "Owned:" tooltip line
+-- Returns: learned(boolean), placed(number), storage(number)
+local function GetOwnedFromTooltip(itemID)
+	if not itemID then return nil end
+
+	ScanTooltip:ClearLines()
+	ScanTooltip:SetItemByID(itemID)
+
+	local numLines = ScanTooltip:NumLines()
+	for i = 1, numLines do
+		local line = _G["DecorBorderScanTooltipTextLeft"..i]
+		if line then
+			local text = line:GetText()
+			Print(text)
+			if text then
+				-- Match: Owned: 1 (Placed: 0, Storage: 1)
+				--local owned, placed, storage = text:match("Owned:%s*(%d+)%s*%(%s*Placed:%s*(%d+),%s*Storage:%s*(%d+)%)")
+				local owned, placed, storage = StripColorCodes(text):match(
+					"Owned:%s*(%d+)%s*%(%s*Placed:%s*(%d+),%s*Storage:%s*(%d+)%)"
+				)
+				local numPlaced  = tonumber(placed)  or 0
+				local numStored  = tonumber(storage)  or 0
+				local quantity   = tonumber(owned)   or 0
+				--Print("%d [o:%s P:%s S:%s]",itemID, quantity, numPlaced, numStored)
+				if owned then
+					return (tonumber(owned) > 0), tonumber(placed), tonumber(storage)
+				end
+			end
+		end
+	end
+
+	-- If no Owned line exists → not owned
+	return false, 0, 0
+end
+
+-- ============================================================
+-- Decor filter helper
+-- (keeps your existing classID test)
 -- ============================================================
 
 local function _isDecor(itemID)
-	local itemName, itemLink, _, _, _, itemType, itemSubType, _, _, _, _, classID = C_Item.GetItemInfo(itemID)
-	-- Housing decor classID currently = 20 in your build
+	local _, _, _, _, _, _, _, _, _, _, _, classID = C_Item.GetItemInfo(itemID)
+	-- Current housing decor classID in your build = 20
 	return (classID == 20)
-end
-
--- Returns true = learned, false = not learned, nil = not a catalog item yet
-local function ColorItemButton(itemID)
-	if not DecorBorderDB.enableColoring then return nil end
-	if not itemID then return nil end
-	if not C_HousingCatalog or not C_HousingCatalog.GetCatalogEntryInfoByItem then return nil end
-
-	local info = C_HousingCatalog.GetCatalogEntryInfoByItem(itemID, true)
-	if not info then return nil end
-
-	-- Ownership logic:
-	-- learned if any stored OR placed copies exist
-	local numPlaced  = tonumber(info.numPlaced)  or 0
-	local numStored  = tonumber(info.numStored)  or 0
-	local quantity   = tonumber(info.quantity)   or 0
-
-	local total = 0
-
-	total = numPlaced + numStored + quantity
-
-	-- Debug if you want it
-	--Print("%s placed:%d stored:%d qty:%d total:%d", info.name, numPlaced, numStored, quantity, total)
-
-	if total > 0 then
-		return true
-	else
-		return false
-	end
 end
 
 -- ============================================================
 -- Merchant Coloring Function
--- Runs ONLY when merchant frame is open
 -- ============================================================
 
 local function DecorBorder_MerchantUpdate()
 	if not MerchantFrame or not MerchantFrame:IsShown() then return end
+	if not DecorBorderDB.enableColoring then return end
 
 	for i = 1, MERCHANT_ITEMS_PER_PAGE do
 		local merchantButton = _G["MerchantItem"..i]
@@ -101,7 +120,8 @@ local function DecorBorder_MerchantUpdate()
 		local itemID = GetMerchantItemID(index)
 
 		if merchantButton and itemButton and itemID and _isDecor(itemID) then
-			local learned = ColorItemButton(itemID)
+
+			local learned = GetOwnedFromTooltip(itemID)
 
 			if learned == true then
 				SetItemButtonNameFrameVertexColor(merchantButton, unpack(DecorBorderDB.colorLearned))
@@ -120,31 +140,24 @@ local function DecorBorder_MerchantUpdate()
 end
 
 -- ============================================================
--- Event Controller
+-- Event Controller (merchant-only execution)
 -- ============================================================
 
 local EventFrame = CreateFrame("Frame")
-EventFrame:RegisterEvent("PLAYER_LOGIN")
 EventFrame:RegisterEvent("MERCHANT_SHOW")
 EventFrame:RegisterEvent("MERCHANT_UPDATE")
 EventFrame:RegisterEvent("MERCHANT_CLOSED")
-EventFrame:RegisterEvent("HOUSING_STORAGE_UPDATED")
-EventFrame:RegisterEvent("HOUSING_STORAGE_ENTRY_UPDATED")
 
 local MerchantHooked = false
 
 EventFrame:SetScript("OnEvent", function(_, event)
 
-	-- Request catalog once when player logs in
 	if event == "PLAYER_LOGIN" then
 		RequestCatalog()
 		return
 	end
-
-	-- Merchant opened
+	
 	if event == "MERCHANT_SHOW" then
-		-- Hook Blizzard update once per session
-		RequestCatalog()
 		if not MerchantHooked then
 			hooksecurefunc("MerchantFrame_UpdateMerchantInfo", DecorBorder_MerchantUpdate)
 			MerchantHooked = true
@@ -153,15 +166,13 @@ EventFrame:SetScript("OnEvent", function(_, event)
 		return
 	end
 
-	-- Merchant contents refreshed
 	if event == "MERCHANT_UPDATE" then
-		RequestCatalog()
 		DecorBorder_MerchantUpdate()
 		return
 	end
 
-	-- Merchant closed → do nothing, no background work continues
 	if event == "MERCHANT_CLOSED" then
+		-- Nothing running in background
 		return
 	end
 end)
