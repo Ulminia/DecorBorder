@@ -1,0 +1,21 @@
+name: Package and Publish
+
+on:
+  push:
+    tags:
+      - 'v*'   # any tag that begins with "v"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: CurseForge Packager
+      uses: BigWigsMods/packager@v2
+      with:
+        args: -c wow
+      env:
+        CF_API_KEY: ${{ secrets.CURSEFORGE_API_TOKEN }}

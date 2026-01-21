@@ -1,5 +1,5 @@
 -- DecorBorder Addon
--- Version 1.1.5
+-- Version 1.1.6
 -- Tooltip-based ownership detection (authoritative Blizzard data)
 -- Runs only while merchant window is open (no background work / no leaks)
 
@@ -74,14 +74,13 @@ local function GetOwnedFromTooltip(itemID)
 			Print(text)
 			if text then
 				-- Match: Owned: 1 (Placed: 0, Storage: 1)
-				--local owned, placed, storage = text:match("Owned:%s*(%d+)%s*%(%s*Placed:%s*(%d+),%s*Storage:%s*(%d+)%)")
 				local owned, placed, storage = StripColorCodes(text):match(
 					"Owned:%s*(%d+)%s*%(%s*Placed:%s*(%d+),%s*Storage:%s*(%d+)%)"
 				)
 				local numPlaced  = tonumber(placed)  or 0
 				local numStored  = tonumber(storage)  or 0
 				local quantity   = tonumber(owned)   or 0
-				--Print("%d [o:%s P:%s S:%s]",itemID, quantity, numPlaced, numStored)
+				
 				if owned then
 					return (tonumber(owned) > 0), tonumber(placed), tonumber(storage)
 				end

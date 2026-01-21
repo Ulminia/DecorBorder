@@ -1,2 +1,14 @@
 package-as: DecorBorder
-tag: 1.1.5
+
+project-id: 1435021
+
+ignore:
+  - .git
+  - .github
+  - README.md
+  - LICENSE
+  - *.lua~   # backup files
+  - *.tmp
+
+wow-interface-versions:
+  - 120000
