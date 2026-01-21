@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - 'v*'   # any tag that begins with "v"
-
-env:
-    CF_API_KEY: ${{ secrets.CURSEFORGE_API_TOKEN }}
     
 jobs:
   release:
@@ -18,9 +15,13 @@ jobs:
 
     - name: CurseForge Packager
       uses: BigWigsMods/packager@v2
+      env:
+        CF_API_KEY: ${{ secrets.CURSEFORGE_API_TOKEN }}
       with:
         args: -g retail
-    - name: Package and release
+    - name: Create Package
       uses: BigWigsMods/packager@v2
+      env:
+        CF_API_KEY: ${{ secrets.CURSEFORGE_API_TOKEN }}
       with:
         args: -g retail
