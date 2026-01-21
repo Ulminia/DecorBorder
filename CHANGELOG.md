@@ -1,3 +1,6 @@
+## v1.1.8 - 2026-01-21
+- Minor updates
+
 ## v1.1.7 - 2026-01-21
 -memory loop fix
 - decor detection fix

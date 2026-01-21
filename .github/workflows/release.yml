@@ -20,7 +20,7 @@ jobs:
       uses: BigWigsMods/packager@v2
       with:
         args: -g retail
-    -name: Package and release
+    - name: Package and release
       uses: BigWigsMods/packager@v2
       with:
         args: -g retail

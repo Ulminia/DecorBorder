@@ -1,5 +1,5 @@
 -- DecorBorder Addon
--- Version 1.1.7
+-- Version 1.1.8
 -- Tooltip-based ownership detection (authoritative Blizzard data)
 -- Runs only while merchant window is open (no background work / no leaks)
 
