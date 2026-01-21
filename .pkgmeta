@@ -8,4 +8,5 @@ ignore:
   - "README.md"
   - "LICENSE"
   - "*.lua~"
+  - ".lua~"
   - "*.tmp"
