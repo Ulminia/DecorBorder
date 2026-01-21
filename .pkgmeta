@@ -7,7 +7,6 @@ ignore:
   - .github
   - README.md
   - LICENSE
-  - *.lua~   # backup files
   - *.tmp
 
 wow-interface-versions:
