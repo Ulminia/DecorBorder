@@ -1,5 +1,4 @@
 package-as: DecorBorder
-project-id: 1435021
 
 ignore:
   - ".git"
