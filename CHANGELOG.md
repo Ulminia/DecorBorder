@@ -1,3 +1,6 @@
+## v1.2.0 - 2026-01-22
+toc updates
+
 ## v1.1.9 - 2026-01-22
 - added new owned/not in storage so you know when you have none to place
 - new settings pannle for custom colors
