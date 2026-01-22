@@ -2,7 +2,8 @@
 ## Title: DecorBorder
 ## Notes: Colors housing décor items red/green based on collection
 ## Author: Ulminia-Zangarmarsh
-## Version: 1.1.8
+## Version: 1.1.9
 ## Category: Housing
 ## SavedVariables: DecorBorderDB
 DecorBorder.lua
+DecorBorder_Config.lua
